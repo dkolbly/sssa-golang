@@ -32,13 +32,14 @@ func Create(minimum int, shares int, raw string) []string {
 	var numbers []*big.Int = make([]*big.Int, 0)
 	numbers = append(numbers, big.NewInt(0))
 
-	// Create the polynomial of degree (minimum - 1); that is, the highest
-	// order term is (minimum-1), though as there is a constant term with
-	// order 0, there are (minimum) number of coefficients.
+	// Create the polynomial of degree (minimum - 1); that is, the
+	// highest order term is (minimum-1), though as there is a
+	// constant term with order 0, there are (minimum) number of
+	// coefficients.
 	//
-	// However, the polynomial object is a 2d array, because we are constructing
-	// a different polynomial for each part of the secret
-	// polynomial[parts][minimum]
+	// However, the polynomial object is a 2d array, because we
+	// are constructing a different polynomial for each part of
+	// the secret polynomial[parts][minimum]
 	var polynomial [][]*big.Int = make([][]*big.Int, len(secret))
 	for i := range polynomial {
 		polynomial[i] = make([]*big.Int, minimum)
@@ -56,13 +57,15 @@ func Create(minimum int, shares int, raw string) []string {
 		}
 	}
 
-	// Create the secrets object; this holds the (x, y) points of each share.
-	// Again, because secret is an array, each share could have multiple parts
-	// over which we are computing Shamir's Algorithm. The last dimension is
-	// always two, as it is storing an x, y pair of points.
+	// Create the secrets object; this holds the (x, y) points of
+	// each share.  Again, because secret is an array, each share
+	// could have multiple parts over which we are computing
+	// Shamir's Algorithm. The last dimension is always two, as it
+	// is storing an x, y pair of points.
 	//
-	// Note: this array is technically unnecessary due to creating result
-	// in the inner loop. Can disappear later if desired. [TODO]
+	// Note: this array is technically unnecessary due to creating
+	// result in the inner loop. Can disappear later if
+	// desired. [TODO]
 	//
 	// secrets[shares][parts][2]
 	var secrets [][][]*big.Int = make([][][]*big.Int, shares)
@@ -87,6 +90,13 @@ func Create(minimum int, shares int, raw string) []string {
 			secrets[i][j][1] = evaluatePolynomial(polynomial[j], number)
 
 			// ...add it to results...
+			log.Debug("secrets[%d][%d][0] = %x (%dB)", i, j,
+				secrets[i][j][0],
+				len(secrets[i][j][0].Bytes()))
+			log.Debug("secrets[%d][%d][1] = %x (%dB)", i, j,
+				secrets[i][j][1],
+				len(secrets[i][j][1].Bytes()))
+			// each of secrets[i][j][*] is < 256^32
 			result[i] += toBase64(secrets[i][j][0])
 			result[i] += toBase64(secrets[i][j][1])
 		}
@@ -102,7 +112,7 @@ func Create(minimum int, shares int, raw string) []string {
  * as a single 88 character share is a pair of 256-bit numbers (x, y).
  *
  * Note: the polynomial will converge if the specified minimum number of shares
- *       or more are passed to this function. Passing thus does not affect it
+ *       or more are passed to this function. Passing more does not affect it.
  *       Passing fewer however, simply means that the returned secret is wrong.
 **/
 func Combine(shares []string) string {

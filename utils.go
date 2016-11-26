@@ -9,7 +9,11 @@ import (
 	"math"
 	"math/big"
 	"strings"
+
+	"github.com/dkolbly/logging"
 )
+
+var log = logging.New("sssa")
 
 /**
  * Returns a random number from the range (0, prime-1) inclusive
@@ -97,18 +101,11 @@ func inNumbers(numbers []*big.Int, value *big.Int) bool {
  * not a string representation; the base64 output is exactly 256 bits long
 **/
 func toBase64(number *big.Int) string {
-	hexdata := fmt.Sprintf("%x", number)
-	for i := 0; len(hexdata) < 64; i++ {
-		hexdata = "0" + hexdata
-	}
-	bytedata, success := hex.DecodeString(hexdata)
-	if success != nil {
-		fmt.Println("Error!")
-		fmt.Println("hexdata: ", hexdata)
-		fmt.Println("bytedata: ", bytedata)
-		fmt.Println(success)
-	}
-	return base64.URLEncoding.EncodeToString(bytedata)
+	var fixed32B [32]byte
+	bytes := number.Bytes()
+	// make it exactly 32 bytes, in case there were some leading 0 bytes
+	copy(fixed32B[32-len(bytes):], bytes)
+	return base64.URLEncoding.EncodeToString(fixed32B[:])
 }
 
 /**
