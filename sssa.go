@@ -4,6 +4,13 @@ import (
 	"math/big"
 )
 
+var Prime *big.Int
+
+func init() {
+	// Set constant prime across the package
+	Prime, _ = big.NewInt(0).SetString("115792089237316195423570985008687907853269984665640564039457584007913129639747", 10)
+}
+
 /**
  * Returns a new arary of secret shares (encoding x,y pairs as base64 strings)
  * created by Shamir's Secret Sharing Algorithm requring a minimum number of
@@ -20,9 +27,6 @@ func Create(minimum int, shares int, raw string) []string {
 
 	// Convert the secret to its respective 256-bit big.Int representation
 	var secret []*big.Int = splitByteToInt([]byte(raw))
-
-	// Set constant prime across the package
-	prime, _ = big.NewInt(0).SetString("115792089237316195423570985008687907853269984665640564039457584007913129639747", 10)
 
 	// List of currently used numbers in the polynomial
 	var numbers []*big.Int = make([]*big.Int, 0)
@@ -106,9 +110,6 @@ func Combine(shares []string) string {
 	// and size of each share (number of parts in the secret).
 	var secrets [][][]*big.Int = make([][][]*big.Int, len(shares))
 
-	// Set constant prime
-	prime, _ = big.NewInt(0).SetString("115792089237316195423570985008687907853269984665640564039457584007913129639747", 10)
-
 	// For each share...
 	for i := range shares {
 		// ...ensure that it is valid...
@@ -154,10 +155,10 @@ func Combine(shares []string) string {
 					added = added.Sub(origin, current)
 
 					numerator = numerator.Mul(numerator, negative)
-					numerator = numerator.Mod(numerator, prime)
+					numerator = numerator.Mod(numerator, Prime)
 
 					denominator = denominator.Mul(denominator, added)
-					denominator = denominator.Mod(denominator, prime)
+					denominator = denominator.Mod(denominator, Prime)
 				}
 			}
 
@@ -169,7 +170,7 @@ func Combine(shares []string) string {
 
 			// LPI sum
 			secret[j] = secret[j].Add(secret[j], working)
-			secret[j] = secret[j].Mod(secret[j], prime)
+			secret[j] = secret[j].Mod(secret[j], Prime)
 		}
 	}
 
@@ -187,9 +188,6 @@ func Combine(shares []string) string {
  * Returns only success/failure (bool)
 **/
 func IsValidShare(candidate string) bool {
-	// Set constant prime across the package
-	prime, _ = big.NewInt(0).SetString("115792089237316195423570985008687907853269984665640564039457584007913129639747", 10)
-
 	if len(candidate)%88 != 0 {
 		return false
 	}
@@ -198,7 +196,7 @@ func IsValidShare(candidate string) bool {
 	for j := 0; j < count; j++ {
 		part := candidate[j*44 : (j+1)*44]
 		decode := fromBase64(part)
-		if decode.Cmp(big.NewInt(0)) == -1 || decode.Cmp(prime) == 1 {
+		if decode.Cmp(big.NewInt(0)) == -1 || decode.Cmp(Prime) == 1 {
 			return false
 		}
 	}

@@ -11,13 +11,11 @@ import (
 	"strings"
 )
 
-var prime *big.Int
-
 /**
  * Returns a random number from the range (0, prime-1) inclusive
 **/
 func random() *big.Int {
-	result := big.NewInt(0).Set(prime)
+	result := big.NewInt(0).Set(Prime)
 	result = result.Sub(result, big.NewInt(1))
 	result, _ = rand.Int(rand.Reader, result)
 	return result
@@ -75,7 +73,7 @@ func evaluatePolynomial(polynomial []*big.Int, value *big.Int) *big.Int {
 	for s := last - 1; s >= 0; s-- {
 		result = result.Mul(result, value)
 		result = result.Add(result, polynomial[s])
-		result = result.Mod(result, prime)
+		result = result.Mod(result, Prime)
 	}
 
 	return result
@@ -141,16 +139,16 @@ func fromBase64(number string) *big.Int {
 **/
 func modInverse(number *big.Int) *big.Int {
 	copy := big.NewInt(0).Set(number)
-	copy = copy.Mod(copy, prime)
-	pcopy := big.NewInt(0).Set(prime)
+	copy = copy.Mod(copy, Prime)
+	pcopy := big.NewInt(0).Set(Prime)
 	x := big.NewInt(0)
 	y := big.NewInt(0)
 
 	copy.GCD(x, y, pcopy, copy)
 
-	result := big.NewInt(0).Set(prime)
+	result := big.NewInt(0).Set(Prime)
 
 	result = result.Add(result, y)
-	result = result.Mod(result, prime)
+	result = result.Mod(result, Prime)
 	return result
 }

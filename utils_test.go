@@ -7,16 +7,14 @@ import (
 )
 
 func TestRandom(t *testing.T) {
-	prime, _ = big.NewInt(0).SetString("115792089237316195423570985008687907853269984665640564039457584007913129639747", 10)
 	for i := 0; i < 10000; i++ {
-		if random().Cmp(prime) >= 0 {
+		if random().Cmp(Prime) >= 0 {
 			t.Fatal("Error! Random number out of bounds exception")
 		}
 	}
 }
 
 func TestBaseConversion(t *testing.T) {
-	prime, _ = big.NewInt(0).SetString("115792089237316195423570985008687907853269984665640564039457584007913129639747", 10)
 	for i := 0; i < 10000; i++ {
 		point := random()
 		if point.Cmp(fromBase64(toBase64(point))) != 0 {
@@ -26,7 +24,6 @@ func TestBaseConversion(t *testing.T) {
 }
 
 func TestToBase64(t *testing.T) {
-	prime, _ = big.NewInt(0).SetString("115792089237316195423570985008687907853269984665640564039457584007913129639747", 10)
 	for i := 0; i < 10000; i++ {
 		point := random()
 		if len(toBase64(point)) != 44 {
@@ -68,22 +65,21 @@ func TestSplitMergeOdds(t *testing.T) {
 }
 
 func TestModInverse(t *testing.T) {
-	prime, _ = big.NewInt(0).SetString("115792089237316195423570985008687907853269984665640564039457584007913129639747", 10)
 	for i := 0; i < 10000; i++ {
 		point := big.NewInt(0).Set(random())
-		if point.Cmp(prime) >= 0 {
+		if point.Cmp(Prime) >= 0 {
 			t.Fatal("Error! Random point out of bounds exception")
 		}
 		inverse := big.NewInt(0).Set(modInverse(point))
-		if inverse.Cmp(prime) >= 0 {
+		if inverse.Cmp(Prime) >= 0 {
 			t.Fatal("Error! Inverse out of bounds exception")
 		}
 		value := big.NewInt(0).Set(point)
 		value = value.Mul(value, inverse)
-		value = value.Mod(value, prime)
+		value = value.Mod(value, Prime)
 		expected := big.NewInt(1)
 		if value.Cmp(expected) != 0 {
-			t.Fatalf("Fatal: modInverse[%v] failed\nExpected: %v; Got: %v\nPoint %v\nInverse: %v\nPrime: %v", i, expected, value, point, inverse, prime)
+			t.Fatalf("Fatal: modInverse[%v] failed\nExpected: %v; Got: %v\nPoint %v\nInverse: %v\nPrime: %v", i, expected, value, point, inverse, Prime)
 		}
 	}
 }
