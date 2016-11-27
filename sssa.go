@@ -126,7 +126,7 @@ func CreateBytes(minimum int, shares int, raw []byte) [][]byte {
 
 /**
  * Takes a string array of shares encoded in base64 created via Shamir's
- * Algorithm; each string represent a byte array of an equal length of a 
+ * Algorithm; each string represent a byte array of an equal length of a
  * multiple of 64 bytes as a single 64 byte share is a pair of 256-bit
  * numbers (x, y).
  *
@@ -145,7 +145,7 @@ func Combine(shares []string) string {
 		}
 		b[i] = bytes
 	}
-	
+
 	return string(CombineBytes(b))
 }
 
@@ -226,8 +226,8 @@ func CombineBytes(shares [][]byte) []byte {
  * Takes in a given string to check if it is a valid secret
  *
  * Requirements:
- * 	Length multiple of 88
- *	Can decode each 44 character block as base64
+ * 	- Length multiple of 64
+ *	- No 32-byte number is less than 0 or greater than the Prime
  *
  * Returns only success/failure (bool)
 **/

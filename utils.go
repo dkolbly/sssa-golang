@@ -149,10 +149,9 @@ func from32Bytes(number []byte) *big.Int {
 	if len(number) != 32 {
 		panic("did not get exactly 32 bytes")
 	}
-	
+
 	return big.NewInt(0).SetBytes(number)
 }
-
 
 /**
  * Computes the multiplicative inverse of the number on the field prime; more
