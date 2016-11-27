@@ -96,6 +96,21 @@ func inNumbers(numbers []*big.Int, value *big.Int) bool {
 	return false
 }
 
+// appendBytes appends the 32 bytes of the number in big-endian
+// to the given array
+func appendBytes(dest []byte, src *big.Int) []byte {
+	bytes := src.Bytes()
+	if len(bytes) > 32 {
+		// something is horribly wrong
+		panic(fmt.Sprintf("number %#x is too big", src))
+	}
+	for i := len(bytes); i < 32; i++ {
+		// insert the leading zeros
+		dest = append(dest, 0)
+	}
+	return append(dest, bytes...)
+}
+
 /**
  * Returns the big.Int number base10 in base64 representation; note: this is
  * not a string representation; the base64 output is exactly 256 bits long
@@ -129,6 +144,15 @@ func fromBase64(number string) *big.Int {
 
 	return result
 }
+
+func from32Bytes(number []byte) *big.Int {
+	if len(number) != 32 {
+		panic("did not get exactly 32 bytes")
+	}
+	
+	return big.NewInt(0).SetBytes(number)
+}
+
 
 /**
  * Computes the multiplicative inverse of the number on the field prime; more

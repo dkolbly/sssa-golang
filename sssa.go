@@ -1,6 +1,7 @@
 package sssa
 
 import (
+	"encoding/base64"
 	"math/big"
 )
 
@@ -12,21 +13,33 @@ func init() {
 }
 
 /**
- * Returns a new arary of secret shares (encoding x,y pairs as base64 strings)
+ * Returns a new array of secret shares (encoding x,y pairs as base64 strings)
  * created by Shamir's Secret Sharing Algorithm requring a minimum number of
  * share to recreate, of length shares, from the input secret raw as a string
 **/
 func Create(minimum int, shares int, raw string) []string {
+	b := CreateBytes(minimum, shares, []byte(raw))
+	if b == nil {
+		return nil
+	}
+	strings := make([]string, shares)
+	for i, bytes := range b {
+		strings[i] = base64.RawURLEncoding.EncodeToString(bytes)
+	}
+	return strings
+}
+
+func CreateBytes(minimum int, shares int, raw []byte) [][]byte {
 	// Verify minimum isn't greater than shares; there is no way to recreate
 	// the original polynomial in our current setup, therefore it doesn't make
 	// sense to generate fewer shares than are needed to reconstruct the secret.
 	// [TODO]: proper error handling
 	if minimum > shares {
-		return []string{""}
+		return nil
 	}
 
 	// Convert the secret to its respective 256-bit big.Int representation
-	var secret []*big.Int = splitByteToInt([]byte(raw))
+	var secret []*big.Int = splitByteToInt(raw)
 
 	// List of currently used numbers in the polynomial
 	var numbers []*big.Int = make([]*big.Int, 0)
@@ -70,6 +83,7 @@ func Create(minimum int, shares int, raw string) []string {
 	// secrets[shares][parts][2]
 	var secrets [][][]*big.Int = make([][][]*big.Int, shares)
 	var result []string = make([]string, shares)
+	var resultBytes [][]byte = make([][]byte, shares)
 
 	// For every share...
 	for i := range secrets {
@@ -99,23 +113,43 @@ func Create(minimum int, shares int, raw string) []string {
 			// each of secrets[i][j][*] is < 256^32
 			result[i] += toBase64(secrets[i][j][0])
 			result[i] += toBase64(secrets[i][j][1])
+			resultBytes[i] = appendBytes(resultBytes[i], secrets[i][j][0])
+			resultBytes[i] = appendBytes(resultBytes[i], secrets[i][j][1])
+			log.Info("resultBytes[%d] is now %d", i, len(resultBytes[i]))
+
 		}
 	}
 
 	// ...and return!
-	return result
+	return resultBytes
 }
 
 /**
  * Takes a string array of shares encoded in base64 created via Shamir's
- * Algorithm; each string must be of equal length of a multiple of 88 characters
- * as a single 88 character share is a pair of 256-bit numbers (x, y).
+ * Algorithm; each string represent a byte array of an equal length of a 
+ * multiple of 64 bytes as a single 64 byte share is a pair of 256-bit
+ * numbers (x, y).
  *
  * Note: the polynomial will converge if the specified minimum number of shares
  *       or more are passed to this function. Passing more does not affect it.
  *       Passing fewer however, simply means that the returned secret is wrong.
 **/
+
 func Combine(shares []string) string {
+	b := make([][]byte, len(shares))
+	for i, str := range shares {
+		bytes, err := base64.RawURLEncoding.DecodeString(str)
+		if err != nil {
+			// invalid encoding
+			return ""
+		}
+		b[i] = bytes
+	}
+	
+	return string(CombineBytes(b))
+}
+
+func CombineBytes(shares [][]byte) []byte {
 	// Recreate the original object of x, y points, based upon number of shares
 	// and size of each share (number of parts in the secret).
 	var secrets [][][]*big.Int = make([][][]*big.Int, len(shares))
@@ -124,21 +158,21 @@ func Combine(shares []string) string {
 	for i := range shares {
 		// ...ensure that it is valid...
 		if IsValidShare(shares[i]) == false {
-			return ""
+			return nil
 		}
 
 		// ...find the number of parts it represents...
 		share := shares[i]
-		count := len(share) / 88
+		count := len(share) / 64
 		secrets[i] = make([][]*big.Int, count)
 
 		// ...and for each part, find the x,y pair...
 		for j := range secrets[i] {
-			cshare := share[j*88 : (j+1)*88]
+			cshare := share[j*64 : (j+1)*64]
 			secrets[i][j] = make([]*big.Int, 2)
 			// ...decoding from base 64.
-			secrets[i][j][0] = fromBase64(cshare[0:44])
-			secrets[i][j][1] = fromBase64(cshare[44:])
+			secrets[i][j][0] = from32Bytes(cshare[:32])
+			secrets[i][j][1] = from32Bytes(cshare[32:])
 		}
 	}
 
@@ -185,7 +219,7 @@ func Combine(shares []string) string {
 	}
 
 	// ...and return the result!
-	return string(mergeIntToByte(secret))
+	return mergeIntToByte(secret)
 }
 
 /**
@@ -197,15 +231,15 @@ func Combine(shares []string) string {
  *
  * Returns only success/failure (bool)
 **/
-func IsValidShare(candidate string) bool {
-	if len(candidate)%88 != 0 {
+func IsValidShare(candidate []byte) bool {
+	if len(candidate)%64 != 0 {
 		return false
 	}
 
-	count := len(candidate) / 44
+	count := len(candidate) / 32
 	for j := 0; j < count; j++ {
-		part := candidate[j*44 : (j+1)*44]
-		decode := fromBase64(part)
+		part := candidate[j*32 : (j+1)*32]
+		decode := big.NewInt(0).SetBytes(part)
 		if decode.Cmp(big.NewInt(0)) == -1 || decode.Cmp(Prime) == 1 {
 			return false
 		}
